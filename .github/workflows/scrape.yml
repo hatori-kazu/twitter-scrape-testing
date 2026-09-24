@@ -10,14 +10,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare data directory
-        run: mkdir -p data
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - run: pip install -r requirements.txt
+
+      - name: Restore twscrape session DB
+        uses: actions/cache@v4
+        with:
+          path: accounts.db
+          key: twscrape-db-${{ github.run_id }}
+          restore-keys: twscrape-db-
 
       - run: python scrape.py
         env:
