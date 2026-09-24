@@ -1,28 +1,24 @@
 name: scrape-tweets
-
 on:
   schedule:
-    - cron: "0 */1 * * *"   # 10分ごとに実行
-  workflow_dispatch:          # 手動実行も可能にする
+    - cron: "0 * * * *"      # 毎時0分（1時間ごと）
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-
     steps:
-      # ① リポジトリをチェックアウト
       - uses: actions/checkout@v4
 
-      # ② Python 3.12 をセットアップ
+      - name: Prepare data directory
+        run: mkdir -p data
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ③ 依存パッケージをインストール
       - run: pip install -r requirements.txt
 
-      # ④ スクレイピングスクリプトを実行
       - run: python scrape.py
         env:
-          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
           SALTCORN_API_TOKEN: ${{ secrets.SALTCORN_API_TOKEN }}
