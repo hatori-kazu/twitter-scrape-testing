@@ -8,12 +8,14 @@ BRIGHTDATA_TOKEN = os.environ["BRIGHTDATA_API_TOKEN"]
 SALTCORN_URL = "https://sachitwitterlist.saltcorn.com/api/tweets"
 SALTCORN_TOKEN = os.environ["SALTCORN_API_TOKEN"]
 
-# 監視対象ユーザー
+# 監視対象ユーザー（@なし）
 TARGET_USER = "hatori_copy"
 TARGET_PROFILE_URL = f"https://x.com/{TARGET_USER}"
 
-# キーワードフィルタ
+# キーワードフィルタ（いずれかを含むツイートのみ保存）
 TARGET_KEYWORDS = ["aw"]
+
+# 除外キーワード
 EXCLUDE_KEYWORDS = [""]
 
 # 取得件数（毎時6件）
@@ -31,12 +33,14 @@ def fetch_tweets():
         "type": "discover_new",
         "discover_by": "profile_url",
         "format": "json",
+        "limit_per_input": MAX_ITEMS,
     }
     headers = {
         "Authorization": f"Bearer {BRIGHTDATA_TOKEN}",
         "Content-Type": "application/json",
     }
-    payload = {"input": [{"url": TARGET_PROFILE_URL}]}
+    # ★ 修正点：配列を直接送信する
+    payload = [{"url": TARGET_PROFILE_URL}]
 
     res = requests.post(
         url, params=params, headers=headers, json=payload, timeout=70
