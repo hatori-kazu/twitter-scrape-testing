@@ -1,23 +1,66 @@
 import os
+import time
 from datetime import datetime
 import requests
-from Scweet import Scweet
 
 # ===== 設定 =====
+BRIGHTDATA_TOKEN = os.environ["BRIGHTDATA_API_TOKEN"]
 SALTCORN_URL = "https://sachitwitterlist.saltcorn.com/api/tweets"
 SALTCORN_TOKEN = os.environ["SALTCORN_API_TOKEN"]
 
-# X認証情報（両方必要）
-X_AUTH_TOKEN = os.environ["X_AUTH_TOKEN"]
-X_CT0 = os.environ["X_CT0"]
-
-# 監視対象ユーザーとキーワード
+# 監視対象ユーザー
 TARGET_USER = "hatori_copy"
+TARGET_PROFILE_URL = f"https://x.com/{TARGET_USER}"
+
+# キーワードフィルタ
 TARGET_KEYWORDS = ["aw"]
 EXCLUDE_KEYWORDS = [""]
 
-# 取得件数
-FETCH_LIMIT = 20
+# 取得件数（毎時6件）
+MAX_ITEMS = 6
+
+# Bright Data設定
+DATASET_ID = "gd_lwxkxvnf1cynvib9co"
+
+
+def fetch_tweets():
+    """Bright Data APIでプロフィールの最新投稿を取得"""
+    url = "https://api.brightdata.com/datasets/v3/scrape"
+    params = {
+        "dataset_id": DATASET_ID,
+        "type": "discover_new",
+        "discover_by": "profile_url",
+        "format": "json",
+    }
+    headers = {
+        "Authorization": f"Bearer {BRIGHTDATA_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    payload = {"input": [{"url": TARGET_PROFILE_URL}]}
+
+    res = requests.post(
+        url, params=params, headers=headers, json=payload, timeout=70
+    )
+
+    # 202 = 同期タイムアウト → 非同期で結果を取得
+    if res.status_code == 202:
+        snapshot_id = res.json()["snapshot_id"]
+        return poll_snapshot(snapshot_id)
+
+    res.raise_for_status()
+    return res.json()
+
+
+def poll_snapshot(snapshot_id):
+    """非同期ジョブの結果をポーリングで取得"""
+    url = f"https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}"
+    headers = {"Authorization": f"Bearer {BRIGHTDATA_TOKEN}"}
+    for _ in range(12):
+        time.sleep(5)
+        res = requests.get(url, headers=headers, params={"format": "json"})
+        if res.status_code == 200:
+            return res.json()
+    raise TimeoutError("Snapshot polling timed out")
 
 
 def should_save(text):
@@ -32,45 +75,21 @@ def should_save(text):
     return True
 
 
-def fetch_tweets():
-    """Scweetで特定ユーザーのキーワード付きツイートを取得"""
-    # auth_token と ct0 を cookies として明示的に渡す
-    s = Scweet(cookies={
-        "auth_token": X_AUTH_TOKEN,
-        "ct0": X_CT0,
-    })
-
-    # X の高度な検索構文：from:ユーザー名 (キーワード1 OR キーワード2)
-    keywords_query = " OR ".join(TARGET_KEYWORDS)
-    query = f"from:{TARGET_USER} ({keywords_query}) -filter:replies"
-
-    tweets = s.search(
-        query,
-        limit=FETCH_LIMIT,
-        save=False,
-    )
-    print(f"Fetched {len(tweets)} tweets from @{TARGET_USER}")
-    return tweets
-
-
 def save_to_saltcorn(tweets):
-    """Scweetの出力をSaltcornスキーマにマッピングして保存"""
+    """Bright Dataの出力をSaltcornスキーマにマッピングして保存"""
     saved = 0
-    for t in tweets:
-        text = getattr(t, "text", "") or ""
+    for t in tweets[:MAX_ITEMS]:
+        text = t.get("description") or ""
         if not should_save(text):
             continue
 
-        user = getattr(t, "user", None)
         payload = {
-            "tweet_id": str(getattr(t, "id", "")),
+            "tweet_id": str(t.get("id")),
             "text": text,
-            "author_name": getattr(user, "name", TARGET_USER) if user else TARGET_USER,
-            "author_handle": getattr(user, "screen_name", TARGET_USER) if user else TARGET_USER,
-            "tweet_url": f"https://x.com/{TARGET_USER}/status/{getattr(t, 'id', '')}",
-            "tweet_created_at": (
-                t.date.isoformat() if getattr(t, "date", None) else None
-            ),
+            "author_name": t.get("user_posted") or TARGET_USER,
+            "author_handle": t.get("user_posted") or TARGET_USER,
+            "tweet_url": t.get("url"),
+            "tweet_created_at": t.get("date_posted"),
             "collected_at": datetime.now().isoformat(),
         }
         res = requests.post(
@@ -87,6 +106,7 @@ def save_to_saltcorn(tweets):
 
 def main():
     tweets = fetch_tweets()
+    print(f"Fetched {len(tweets)} tweets from @{TARGET_USER}")
     save_to_saltcorn(tweets)
 
 
