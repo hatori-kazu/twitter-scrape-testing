@@ -12,7 +12,7 @@ SALTCORN_TOKEN = os.environ["SALTCORN_API_TOKEN"]
 TARGET_USER = "hatori_copy"
 
 # 取得件数（深めに取得してフィルタで絞る）
-FETCH_LIMIT = 100
+FETCH_LIMIT = 2
 
 # フィルタするキーワード（いずれかを含むツイートのみ保存）
 TARGET_KEYWORDS = ["galaxy"]
