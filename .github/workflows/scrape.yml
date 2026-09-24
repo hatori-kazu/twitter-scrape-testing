@@ -1,5 +1,4 @@
 name: scrape-tweets
-
 on:
   schedule:
     - cron: "0 * * * *"      # 毎時0分
@@ -18,14 +17,9 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          pip install -U "Scweet>=5.5.0"
-          pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Run scraper
-        run: python scrape.py
+      - run: python scrape.py
         env:
-          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
-          X_CT0: ${{ secrets.X_CT0 }}
+          BRIGHTDATA_API_TOKEN: ${{ secrets.BRIGHTDATA_API_TOKEN }}
           SALTCORN_API_TOKEN: ${{ secrets.SALTCORN_API_TOKEN }}
