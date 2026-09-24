@@ -9,7 +9,7 @@ SALTCORN_URL = "https://sachitwitterlist.saltcorn.com/api/tweets"
 SALTCORN_TOKEN = os.environ["SALTCORN_API_TOKEN"]
 
 # 監視対象ユーザー（@なし）
-TARGET_USER = "NASA"
+TARGET_USER = "hatori_copy"
 
 # 取得件数（深めに取得してフィルタで絞る）
 FETCH_LIMIT = 100
