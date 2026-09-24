@@ -1,2 +1,2 @@
-twscrape
+Scweet
 requests
