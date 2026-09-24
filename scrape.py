@@ -22,7 +22,6 @@ EXCLUDE_KEYWORDS = [""]
 
 
 def fetch_tweets():
-    """x-cli のゲストモードでタイムラインを取得しJSONLをパース"""
     result = subprocess.run(
         [
             "docker", "run", "--rm",
@@ -35,6 +34,12 @@ def fetch_tweets():
         ],
         capture_output=True, text=True, timeout=120,
     )
+    print("=== STDOUT ===")
+    print(result.stdout[:500])
+    print("=== STDERR ===")
+    print(result.stderr[:1000])
+    print(f"=== returncode: {result.returncode} ===")
+    
     if result.returncode != 0:
         print(f"x-cli ERROR: {result.stderr}")
         return []
