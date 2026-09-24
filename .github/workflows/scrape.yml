@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -U Scweet
+          pip install -U "Scweet>=5.5.0"
           pip install -r requirements.txt
 
       - name: Run scraper
