@@ -16,7 +16,7 @@ TARGET_PROFILE_URL = f"https://x.com/{TARGET_USER}"
 TARGET_KEYWORDS = ["aw"]
 
 # 除外キーワード
-EXCLUDE_KEYWORDS = [""]
+EXCLUDE_KEYWORDS = []
 
 # 取得件数（毎時6件）
 MAX_ITEMS = 6
